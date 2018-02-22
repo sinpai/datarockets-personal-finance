@@ -1,74 +1,39 @@
-# Ruby CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-ruby/ for more details
-#
-version: 2
-jobs:
-  build:
-    docker:
-       - image: circleci/ruby:2.4.1
-         environment:
-         - RAILS_ENV: test
-         - PGHOST: 127.0.0.1
-         - PGUSER: root
-				 
-			- image: circleci/node:8.0
-        environment:
-          NODE_ENV: test
-      
-       - image: circleci/postgres:9.4
-         environment:
-         - POSTGRES_USER: root
-         - POSTGRES_DB: datarockets-finance-app_test
+machine:
 
-    working_directory: ~/repo
+	  timezone:
+	    Europe/Minsk # Set the timezone
 
-    steps:
-      - checkout
+	  # Version of ruby to use
+	  ruby:
+	    version:
+	      2.4.1
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "Gemfile.lock" }}
-          - v1-dependencies-
+	  # Override /etc/hosts
+	  hosts:
+	    circlehost: 127.0.0.1
+	    dev.mycompany.com: 127.0.0.1
 
-      - run:
-          name: install dependencies
-          command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
-      - run: sudo apt-get update
-      - run: sudo apt install postgresql-client
+	  # Add some environment variables
+	  environment:
+	    CIRCLE_ENV: test
+	    DATABASE_URL: postgresql://ubuntu:@127.0.0.1:5432/datarockets-finance-app_test
 
-      - save_cache:
-          paths:
-            - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
-        
-      # Database setup
-      - run: bundle exec rake db:create
-      - run: bundle exec rake db:schema:load
+	## Customize checkout
+	checkout:
+	  post:
+	    - git submodule sync
+	    - git submodule update --init # use submodules
 
-      # Complile webpacker
-      - run: yarn install
-      - run: bundle exec rails webpacker:compile
+	## Customize dependencies
+	dependencies:
+	  pre:
+	    - gem install bundler --pre
 
-      # Run linters
-      - run: reek -c config/linters/reek.yml
+	  override:
+	    - bundle install: # note ':' here
+	        timeout: 180 # fail if command has no output for 3 minutes
 
-      # run tests!
-      - run:
-          name: run tests
-          command: |
-            mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
-            
-            bundle exec rspec --format progress \
-                            --out /tmp/test-results/rspec.xml \
-                            --format progress \
-                            $TEST_FILES
-      # collect reports
-      - store_test_results:
-          path: /tmp/test-results
-      - store_artifacts:
-          path: /tmp/test-results
-					destination: test-results
+	test:
+	  post:
+	    - reek -c config/linters/reek.yml
+			- rspec
