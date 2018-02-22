@@ -33,11 +33,20 @@ gem 'jbuilder', '~> 2.5'
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
 
+# Use webpacker for assets
+gem 'webpacker', '~> 3.2'
+# Use slim for views
+gem 'slim'
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
   # Adds support for Capybara system testing and selenium driver
   gem 'capybara', '~> 2.13'
+  gem 'dotenv-rails'
+  gem 'reek'
+  gem 'rspec-rails'
+  gem 'rubocop-rspec'
   gem 'selenium-webdriver'
 end
 
